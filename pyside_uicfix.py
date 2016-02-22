@@ -19,9 +19,9 @@ def loadUiType(filename):
     # compile ui file to python code
     io = StringIO()
     winfo = UICompiler().compileUi(filename, io, False)
-    pyc = compile(io.getvalue(), '<string>', 'exec')
 
     # compile python code and extract form class
+    pyc = compile(io.getvalue(), '<string>', 'exec')
     frame = {}
     exec pyc in frame
     form_class = frame[winfo['uiclass']]
