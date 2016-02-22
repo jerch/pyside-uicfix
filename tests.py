@@ -15,7 +15,7 @@ FormClass, BaseClass = loadUiType('./qwidget_slot.ui')
 class TestBase(QtGui.QWidget):
     """Base test class with one slot"""
     def testSlot(self):
-        print 'button pressed'
+        print 'button pressed', self.button
 
 
 class Test1(TestBase):
@@ -114,6 +114,7 @@ def test10(app):
     f = QtCore.QFile('./mainwindow.ui')
     f.open(QtCore.QIODevice.ReadOnly)
     loadUi(f, w)
+    f.close()
     w.show()
     app.exec_()
 

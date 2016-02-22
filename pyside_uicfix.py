@@ -76,12 +76,21 @@ def loadUi(filename, instance=None):
     # create base class instance if we got no base instance
     if not instance:
         instance = base_cls()
+        form = form_cls()
+        form.setupUi(instance)
+        return instance
 
     # base instance must be derived from base class
     if base_cls not in instance.__class__.mro():
         raise TypeError('class must be of %s' % base_cls)
 
-    # create form instance and apply the style to instance
-    form = form_cls()
-    form.setupUi(instance)
+    # try to add form class to base classes and apply styles
+    try:
+        cls = instance.__class__
+        instance.__class__ = cls.__class__(cls.__name__, (cls, form_cls), {})
+        instance.setupUi(instance)
+    except TypeError:
+        # we got a builtin Qt instance - simply apply styles
+        form = form_cls()
+        form.setupUi(instance)
     return instance
