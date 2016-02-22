@@ -108,6 +108,24 @@ def test9(app):
         print e
 
 
+def test10(app):
+    print "TEST 10: loadUi with QFile"
+    w = QtGui.QMainWindow()
+    f = QtCore.QFile('./mainwindow.ui')
+    f.open(QtCore.QIODevice.ReadOnly)
+    loadUi(f, w)
+    w.show()
+    app.exec_()
+
+
+def test11(app):
+    print "TEST 11: loadUi with file object"
+    w = QtGui.QMainWindow()
+    loadUi(open('./mainwindow.ui'), w)
+    w.show()
+    app.exec_()
+
+
 if __name__ == '__main__':
     app = QtGui.QApplication([])
     test1(app)
@@ -119,3 +137,5 @@ if __name__ == '__main__':
     test7(app)
     test8(app)
     test9(app)
+    test10(app)
+    test11(app)

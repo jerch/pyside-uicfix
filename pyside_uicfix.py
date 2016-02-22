@@ -1,27 +1,60 @@
 from pysideuic.Compiler.compiler import UICompiler
 from PySide import QtGui
+from PySide.QtCore import QIODevice
 from cStringIO import StringIO
 import os
+import hashlib
 
 # class cache to hold class references as long as possible
 # also used to avoid recompiling of ui files
 _cls_cache = {}
 
-def loadUiType(filename):
+def loadUiType(f):
     """Load form and base classes from ui file."""
 
+    key = ''
+
+    # python and Qt file like objects
+    if hasattr(f, 'read'):
+        if isinstance(f, QIODevice):
+
+            # always copy Qt objects' content over to StringIO
+            if not (f.openMode() & QIODevice.ReadOnly):
+                raise IOError('file %s not open for reading' % f)
+            io_in = StringIO()
+            io_in.write(f.readAll())
+
+            # use QFile's fileName as key
+            if hasattr(f, 'fileName') and f.fileName():
+                key = os.path.abspath(f.fileName())
+        else:
+            # normal python file object and StringIO objects
+            if hasattr(f, 'name') and f.name:
+                key = os.path.abspath(f.name)
+            io_in = f
+
+        # if we got no key so far, build key from content hash
+        if not key:
+            key = hashlib.sha1(io_in.getvalue()).hexdigest()
+        io_in.seek(0)
+
+    elif isinstance(f, basestring):
+        io_in = os.path.abspath(f)
+        key = io_in
+    else:
+        raise TypeError('wrong type for f')
+
     # lookup requested ui file in cache first
-    filename = os.path.abspath(filename)
-    classes = _cls_cache.get(filename)
+    classes = _cls_cache.get(key)
     if classes:
         return classes
 
     # compile ui file to python code
-    io = StringIO()
-    winfo = UICompiler().compileUi(filename, io, False)
+    io_out = StringIO()
+    winfo = UICompiler().compileUi(io_in, io_out, False)
 
     # compile python code and extract form class
-    pyc = compile(io.getvalue(), '<string>', 'exec')
+    pyc = compile(io_out.getvalue(), '<string>', 'exec')
     frame = {}
     exec pyc in frame
     form_class = frame[winfo['uiclass']]
@@ -30,7 +63,7 @@ def loadUiType(filename):
     base_class = getattr(QtGui, winfo['baseclass'])
 
     # save classes in cache
-    _cls_cache[filename] = (form_class, base_class)
+    _cls_cache[key] = (form_class, base_class)
     return form_class, base_class
 
 
