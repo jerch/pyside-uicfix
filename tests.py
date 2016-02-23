@@ -85,6 +85,7 @@ def test6(app):
 def test7(app):
     print "TEST 7: loadUi without baseinstance - ui file w'o slot"
     w = loadUi('./qwidget.ui')
+    print w.button
     w.show()
     app.exec_()
 
