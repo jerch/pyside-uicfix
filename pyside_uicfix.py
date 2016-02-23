@@ -7,8 +7,9 @@ import hashlib
 import types
 try:
     from cStringIO import StringIO
-except:
+except ImportError:
     from io import StringIO
+    unicode = str
 
 
 # class cache to hold class references as long as possible
@@ -47,7 +48,7 @@ def loadUiType(f):
             key = hashlib.sha1(io_in.getvalue()).hexdigest()
         io_in.seek(0)
 
-    elif isinstance(f, (str, bytes)):#basestring):
+    elif isinstance(f, (str, bytes, unicode)):
         io_in = os.path.abspath(f)
         key = io_in
     else:
@@ -92,11 +93,9 @@ def loadUi(filename, instance=None):
 
     # transfer needed methods to instance and apply styles
     for methodname in ('retranslateUi', 'setupUi'):
-        if sys.version_info >= (3, 0):
-            setattr(instance, methodname,
-                types.MethodType(getattr(form_cls, methodname), instance))
-        else:
-            setattr(instance, methodname,
-                types.MethodType(getattr(form_cls, methodname).im_func, instance))
+        func = getattr(form_cls, methodname)
+        if sys.version_info < (3, 0):
+            func = func.im_func
+        setattr(instance, methodname, types.MethodType(func, instance))
     instance.setupUi(instance)
     return instance
