@@ -16,43 +16,46 @@ except ImportError:
 # also used to avoid recompiling of ui files
 _cls_cache = {}
 
-def loadUiType(f):
+def loadUiType(uifile):
     """Load form and base classes from ui file."""
 
     key = ''
 
     # python and Qt file like objects
-    if hasattr(f, 'read'):
-        if isinstance(f, QIODevice):
-
+    if hasattr(uifile, 'read'):
+        if isinstance(uifile, QIODevice):
             # always copy Qt objects' content over to StringIO
-            if not (f.openMode() & QIODevice.ReadOnly):
-                raise IOError('file %s not open for reading' % f)
+            if not (uifile.openMode() & QIODevice.ReadOnly):
+                raise IOError('file %s not open for reading' % uifile)
             io_in = StringIO()
+            data = uifile.readAll().data()
             if sys.version_info >= (3, 0):
-                io_in.write(str(f.readAll().data(), encoding='utf-8'))
-            else:
-                io_in.write(f.readAll().data())
+                data = str(data, encoding='utf-8')
+            io_in.write(data)
 
             # use QFile's fileName as key
-            if hasattr(f, 'fileName') and f.fileName():
-                key = os.path.abspath(f.fileName())
+            if hasattr(uifile, 'fileName') and uifile.fileName():
+                key = os.path.abspath(uifile.fileName())
         else:
             # normal python file object and StringIO objects
-            if hasattr(f, 'name') and f.name:
-                key = os.path.abspath(f.name)
-            io_in = f
+            if hasattr(uifile, 'name') and uifile.name:
+                key = os.path.abspath(uifile.name)
+            io_in = uifile
 
         # if we got no key so far, build key from content hash
         if not key:
-            key = hashlib.sha1(io_in.getvalue()).hexdigest()
+            io_in.seek(0)
+            data = io_in.read()
+            if sys.version_info >= (3, 0):
+                data = bytes(data, 'utf-8')
+            key = hashlib.sha1(data).hexdigest()
         io_in.seek(0)
 
-    elif isinstance(f, (str, bytes, unicode)):
-        io_in = os.path.abspath(f)
+    elif isinstance(uifile, (str, bytes, unicode)):
+        io_in = os.path.abspath(uifile)
         key = io_in
     else:
-        raise TypeError('wrong type for f')
+        raise TypeError('wrong type for uifile')
 
     # lookup requested ui file in cache first
     classes = _cls_cache.get(key)
@@ -77,11 +80,11 @@ def loadUiType(f):
     return form_class, base_class
 
 
-def loadUi(filename, instance=None):
+def loadUi(uifile, instance=None):
     """Load ui form class onto a given QWidget object."""
 
     # get class objects for this file
-    form_cls, base_cls = loadUiType(filename)
+    form_cls, base_cls = loadUiType(uifile)
 
     # create base class instance if we got no base instance
     if not instance:

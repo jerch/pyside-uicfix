@@ -141,3 +141,5 @@ if __name__ == '__main__':
     test9(app)
     test10(app)
     test11(app)
+    from pyside_uicfix import _cls_cache
+    print(_cls_cache)
