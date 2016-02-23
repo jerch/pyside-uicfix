@@ -1,7 +1,10 @@
 # pyside-uicfix
 
-A simple drop-in to use PyQt's `loadUiType` and `loadUi` with PySide. Only tested with Python 2.7.
+A simple drop-in for `loadUiType` and `loadUi` with PySide. Tested with PySide 1.2.4 in Python 2.7 and 3.4 (Ubuntu)
 
+## Requires
+
+On Ubuntu you need to install the pyside-tools package along with Pyside.
 
 ## Examples
 ```python

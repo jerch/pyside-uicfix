@@ -1,10 +1,15 @@
 from pysideuic.Compiler.compiler import UICompiler
 from PySide import QtGui
 from PySide.QtCore import QIODevice
-from cStringIO import StringIO
 import os
+import sys
 import hashlib
 import types
+try:
+    from cStringIO import StringIO
+except:
+    from io import StringIO
+
 
 # class cache to hold class references as long as possible
 # also used to avoid recompiling of ui files
@@ -23,7 +28,10 @@ def loadUiType(f):
             if not (f.openMode() & QIODevice.ReadOnly):
                 raise IOError('file %s not open for reading' % f)
             io_in = StringIO()
-            io_in.write(f.readAll())
+            if sys.version_info >= (3, 0):
+                io_in.write(str(f.readAll().data(), encoding='utf-8'))
+            else:
+                io_in.write(f.readAll().data())
 
             # use QFile's fileName as key
             if hasattr(f, 'fileName') and f.fileName():
@@ -39,7 +47,7 @@ def loadUiType(f):
             key = hashlib.sha1(io_in.getvalue()).hexdigest()
         io_in.seek(0)
 
-    elif isinstance(f, basestring):
+    elif isinstance(f, (str, bytes)):#basestring):
         io_in = os.path.abspath(f)
         key = io_in
     else:
@@ -57,7 +65,7 @@ def loadUiType(f):
     # compile python code and extract form class
     pyc = compile(io_out.getvalue(), '<string>', 'exec')
     frame = {}
-    exec pyc in frame
+    exec(pyc, frame)
     form_class = frame[winfo['uiclass']]
 
     # lookup base class in global QtGui module
@@ -84,7 +92,11 @@ def loadUi(filename, instance=None):
 
     # transfer needed methods to instance and apply styles
     for methodname in ('retranslateUi', 'setupUi'):
-        setattr(instance, methodname,
-            types.MethodType(getattr(form_cls, methodname).im_func, instance))
+        if sys.version_info >= (3, 0):
+            setattr(instance, methodname,
+                types.MethodType(getattr(form_cls, methodname), instance))
+        else:
+            setattr(instance, methodname,
+                types.MethodType(getattr(form_cls, methodname).im_func, instance))
     instance.setupUi(instance)
     return instance
